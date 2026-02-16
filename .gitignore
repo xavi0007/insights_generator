@@ -1,0 +1,7 @@
+.venv
+src/insights_generator.egg-info
+__pycache__/
+*.pyc
+.env
+artifacts/
+.DS_Store

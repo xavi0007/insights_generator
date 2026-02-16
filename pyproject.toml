@@ -1,0 +1,34 @@
+[project]
+name = "insights-generator"
+version = "0.2.0"
+description = "LangGraph multi-agent insights generator with swappable LLM backends"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn>=0.30.0",
+  "python-multipart>=0.0.9",
+  "langgraph>=0.2.35",
+  "langchain-core>=0.3.0",
+  "pandas>=2.2.2",
+  "pyarrow>=17.0.0",
+  "plotly>=5.24.0",
+  "numpy>=2.1.0",
+  "python-dotenv>=1.0.1",
+]
+
+[project.optional-dependencies]
+providers = [
+  "langchain-openai>=0.2.0",
+  "langchain-anthropic>=0.3.0",
+]
+repl = [
+  "langchain-experimental>=0.3.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
