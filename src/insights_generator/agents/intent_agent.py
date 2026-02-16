@@ -75,16 +75,40 @@ def _heuristic_intent(combined: str) -> dict[str, Any]:
     }
 
 
-def _llm_intent(client: ChatClient, combined: str) -> dict[str, Any]:
-    prompt = f"""
-You are an intent parser for analytics requests.
-Return strict JSON with keys:
-requested_focus (list[str]), visualization_preferences (list[str]), needs_clarification (bool), clarification_question (str).
-Valid focus labels: trend, anomaly, variance, distribution, summary.
-Valid visualization preferences: line, bar, histogram, scatter, box.
+def _build_intent_prompt(combined: str, prompt_cfg: dict[str, Any]) -> str:
+    system_instructions = prompt_cfg.get(
+        "system_instructions",
+        "You are an intent parser for analytics requests. Return strict JSON only.",
+    )
+    output_schema = prompt_cfg.get("output_schema", "")
+    rules = prompt_cfg.get("rules", [])
+    few_shots = prompt_cfg.get("few_shots", [])
 
-User request: {combined!r}
-""".strip()
+    lines: list[str] = [str(system_instructions).strip()]
+    if output_schema:
+        lines.append("Output schema:")
+        lines.append(str(output_schema).strip())
+
+    if isinstance(rules, list) and rules:
+        lines.append("Rules:")
+        for rule in rules:
+            lines.append(f"- {rule}")
+
+    if isinstance(few_shots, list) and few_shots:
+        lines.append("Few-shot examples:")
+        for ex in few_shots:
+            user = str(ex.get("user", "")).strip()
+            assistant_json = str(ex.get("assistant_json", "")).strip()
+            if user and assistant_json:
+                lines.append(f"User: {user}")
+                lines.append(f"Assistant JSON: {assistant_json}")
+
+    lines.append(f"User request: {combined!r}")
+    return "\n".join(lines).strip()
+
+
+def _llm_intent(client: ChatClient, combined: str, prompt_cfg: dict[str, Any]) -> dict[str, Any]:
+    prompt = _build_intent_prompt(combined, prompt_cfg)
     output = client.invoke_text(prompt)
     try:
         parsed = json.loads(output)
@@ -98,13 +122,17 @@ User request: {combined!r}
         return _heuristic_intent(combined)
 
 
-def build_intent_agent(chat_client: ChatClient):
+def build_intent_agent(chat_client: ChatClient, prompt_cfg: dict[str, Any]):
     def run_intent_agent(state: GraphState) -> GraphState:
         prompt = (state.get("user_prompt") or "").strip()
         clarification = (state.get("clarification") or "").strip()
         combined = f"{prompt} {clarification}".strip()
 
-        parsed = _llm_intent(chat_client, combined) if combined else _heuristic_intent(combined)
+        parsed = (
+            _llm_intent(chat_client, combined, prompt_cfg)
+            if combined
+            else _heuristic_intent(combined)
+        )
         column_hints = re.findall(r"\b[a-zA-Z_][a-zA-Z0-9_]*\b", combined)
 
         state["needs_clarification"] = parsed["needs_clarification"]

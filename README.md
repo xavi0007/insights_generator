@@ -18,8 +18,15 @@ Multi-agent analytics pipeline for CSV/Parquet data with configurable LLM backen
 Set in `.env`:
 - `MODEL_PROVIDER`: `openai`, `anthropic`, or `none`
 - `MODEL_NAME`: model id for the provider
+- `PROMPTS_PATH`: YAML prompt pack path (default `prompts/insights_prompts.yaml`)
 
 If provider config is missing/unavailable, the app falls back to deterministic heuristics.
+
+## Externalized prompts and few-shots
+- Prompt pack file: `prompts/insights_prompts.yaml`
+- `intent` section contains parser rules and intent few-shot JSON examples.
+- `insight` section contains business logic constraints and insight few-shot examples.
+- Update this YAML to tune domain logic without code changes.
 
 ## Setup
 ```bash

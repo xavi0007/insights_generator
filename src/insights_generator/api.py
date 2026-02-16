@@ -11,14 +11,16 @@ from insights_generator.graph import build_graph
 from insights_generator.io_utils import load_dataframe_from_upload
 from insights_generator.model_router import get_chat_client
 from insights_generator.models import ClarifyRequest
+from insights_generator.prompting import load_prompt_pack
 from insights_generator.session_store import SessionPayload, delete_session, get_session, put_session
 
 load_dotenv()
 config = load_config()
 chat_client = get_chat_client(config.model)
+prompt_pack = load_prompt_pack(config.prompts_path)
 
 app = FastAPI(title="Insights Generator", version="0.2.0")
-graph = build_graph(chat_client)
+graph = build_graph(chat_client, prompt_pack)
 
 
 def _execute_graph(

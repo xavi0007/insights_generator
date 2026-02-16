@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from insights_generator.model_router import ChatClient
 from insights_generator.state import GraphState
 
@@ -37,20 +39,47 @@ def _heuristic_insight(state: GraphState) -> str:
     return "\n".join(lines)
 
 
-def build_insight_agent(chat_client: ChatClient):
+def _build_insight_prompt(state: GraphState, prompt_cfg: dict) -> str:
+    system_instructions = prompt_cfg.get(
+        "system_instructions",
+        "You are a senior analytics consultant writing business-facing insights.",
+    )
+    business_logic = prompt_cfg.get("business_logic", [])
+    output_instructions = prompt_cfg.get(
+        "output_instructions",
+        "Write concise actionable insights with trend, anomalies, variance, long-tail, and next action.",
+    )
+    few_shots = prompt_cfg.get("few_shots", [])
+
+    lines: list[str] = [str(system_instructions).strip()]
+    if isinstance(business_logic, list) and business_logic:
+        lines.append("Business logic constraints:")
+        for rule in business_logic:
+            lines.append(f"- {rule}")
+
+    if output_instructions:
+        lines.append("Output instructions:")
+        lines.append(str(output_instructions).strip())
+
+    if isinstance(few_shots, list) and few_shots:
+        lines.append("Few-shot examples:")
+        for ex in few_shots:
+            input_obj = ex.get("input", {})
+            assistant = ex.get("assistant", "")
+            if input_obj and assistant:
+                lines.append(f"Input: {json.dumps(input_obj)}")
+                lines.append(f"Assistant: {str(assistant).strip()}")
+
+    lines.append(f"Intent: {state.get('intent', {})}")
+    lines.append(f"Analytics summary: {state.get('analytics', {})}")
+    lines.append(f"Available chart artifacts: {state.get('visualizations', [])}")
+    return "\n".join(lines).strip()
+
+
+def build_insight_agent(chat_client: ChatClient, prompt_cfg: dict):
     def run_insight_agent(state: GraphState) -> GraphState:
-        analytics = state.get("analytics", {})
-        intent = state.get("intent", {})
         heuristic = _heuristic_insight(state)
-
-        prompt = f"""
-You are a senior analytics consultant. Produce concise actionable insights.
-Use this intent: {intent}
-Use this analytics summary: {analytics}
-Available chart artifacts: {state.get('visualizations', [])}
-
-Write 5-8 bullet-style lines including trends, anomalies, variance, long-tail observations, and recommended next action.
-""".strip()
+        prompt = _build_insight_prompt(state, prompt_cfg)
 
         llm_text = chat_client.invoke_text(prompt)
         state["insights"] = llm_text if llm_text else heuristic

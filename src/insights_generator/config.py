@@ -17,6 +17,7 @@ class ModelConfig:
 @dataclass(frozen=True)
 class AppConfig:
     model: ModelConfig
+    prompts_path: str
 
 
 
@@ -32,5 +33,6 @@ def load_config() -> AppConfig:
             openai_api_key=os.getenv("OPENAI_API_KEY", ""),
             openai_base_url=os.getenv("OPENAI_BASE_URL", ""),
             anthropic_api_key=os.getenv("ANTHROPIC_API_KEY", ""),
-        )
+        ),
+        prompts_path=os.getenv("PROMPTS_PATH", "prompts/insights_prompts.yaml"),
     )
