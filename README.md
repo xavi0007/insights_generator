@@ -50,3 +50,35 @@ Open docs: `http://127.0.0.1:8000/docs`
   - `clarification`
 
 Generated charts are saved in `artifacts/<session_id>/`.
+
+## Agentic chatbot example (clarify + joke + recipe)
+This repo also includes a maintainable/testable agentic chatbot module in `src/agentic_chatbot`:
+- `planner.py`: intent routing planner (`clarify`, `joke`, `recipe`)
+- `skills.py`: isolated skills (clarification, joke generation, recipe generation)
+- `agent.py`: orchestration layer for dispatching plans to skills
+- `llm.py`: OpenAI adapter behind an `LLMClient` protocol for dependency injection
+- `factory.py`: `ChatbotFactory` for provider swapping (`openai`, `anthropic`, `google`)
+
+### Why this is testable
+- Planner, agent, and skills use interface-based dependency injection.
+- Unit tests use stubs/mocks, so no real OpenAI calls are needed.
+- OpenAI payload formatting is verified in isolation.
+
+### Run tests
+```bash
+pip install -e .[dev]
+pytest
+```
+
+### Run chatbot CLI
+```bash
+export OPENAI_API_KEY=your_key
+export OPENAI_MODEL=gpt-4o-mini
+export LLM_PROVIDER=openai
+agentic-chatbot
+```
+
+Provider-specific env keys:
+- OpenAI: `LLM_PROVIDER=openai`, `OPENAI_API_KEY`, `OPENAI_MODEL`
+- Anthropic: `LLM_PROVIDER=anthropic`, `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`
+- Google: `LLM_PROVIDER=google`, `GOOGLE_API_KEY`, `GOOGLE_MODEL`

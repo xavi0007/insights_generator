@@ -10,6 +10,7 @@ dependencies = [
   "python-multipart>=0.0.9",
   "langgraph>=0.2.35",
   "langchain-core>=0.3.0",
+  "openai>=1.40.0",
   "pandas>=2.2.2",
   "pyarrow>=17.0.0",
   "plotly>=5.24.0",
@@ -22,10 +23,22 @@ dependencies = [
 providers = [
   "langchain-openai>=0.2.0",
   "langchain-anthropic>=0.3.0",
+  "anthropic>=0.40.0",
+  "google-generativeai>=0.8.0",
 ]
 repl = [
   "langchain-experimental>=0.3.0",
 ]
+dev = [
+  "pytest>=8.0.0",
+]
+
+[project.scripts]
+agentic-chatbot = "agentic_chatbot.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
