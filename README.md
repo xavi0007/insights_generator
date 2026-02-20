@@ -58,6 +58,7 @@ This repo also includes a maintainable/testable agentic chatbot module in `src/a
 - `agent.py`: orchestration layer for dispatching plans to skills
 - `llm.py`: OpenAI adapter behind an `LLMClient` protocol for dependency injection
 - `factory.py`: `ChatbotFactory` for provider swapping (`openai`, `anthropic`, `google`)
+- `mcp.py`: MCP connectors/registry for external tool and prompt servers
 
 ### Why this is testable
 - Planner, agent, and skills use interface-based dependency injection.
@@ -82,3 +83,28 @@ Provider-specific env keys:
 - OpenAI: `LLM_PROVIDER=openai`, `OPENAI_API_KEY`, `OPENAI_MODEL`
 - Anthropic: `LLM_PROVIDER=anthropic`, `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`
 - Google: `LLM_PROVIDER=google`, `GOOGLE_API_KEY`, `GOOGLE_MODEL`
+
+### MCP connectors (tools + prompts)
+Use `MCPConnectorRegistry` to register aliases for MCP prompt and tool endpoints, then inject it into `ChatbotFactory`.
+
+```python
+from agentic_chatbot.factory import ChatbotFactory
+from agentic_chatbot.mcp import MCPConnectorRegistry, MCPPromptConnector, MCPToolConnector
+
+registry = MCPConnectorRegistry()
+registry.register_prompt(
+    "joke_system",
+    MCPPromptConnector(client=mcp_client, server="prompt-server", prompt_name="joke_prompt"),
+)
+registry.register_tool(
+    "joke_policy",
+    MCPToolConnector(client=mcp_client, server="tools-server", tool_name="policy_lookup"),
+)
+
+agent = ChatbotFactory(provider="openai", mcp_registry=registry).build_agent()
+```
+
+Planner params can reference connectors:
+- `mcp_prompt`: prompt alias (for system prompt override)
+- `mcp_tool`: tool alias (tool output is appended as extra context)
+- `prompt_args` / `tool_args`: optional argument dictionaries
